@@ -1,22 +1,30 @@
-.output_canvas {
+html, body {
+  width:  100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background-color: #171717;
+}
+
+.input_video {
     -webkit-transform: scaleX(-1);
     transform: scaleX(-1);
-    position:absolute;
-    z-index: 0;
-    bottom:4%;
-    left:2%;
-    width:25%;
-    height:25%;
+    position: absolute;
+    z-index: 1;
+    width: 24em;
+    max-width: calc(100% - 2em);
+    height: auto;
+    bottom: 0;
+    margin: 1em;
 }
 
 .main_canvas{
     -webkit-transform: scaleX(-1);
     transform: scaleX(-1);
     position:absolute;
-    z-index: 1;
+    z-index: 0;
     top: 0;
-    bottom: 0;
     left: 0;
-    right: 0;
-    border:1px solid #000000;
 }

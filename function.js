@@ -1,8 +1,6 @@
 // import {drawConnectors, drawLandmarks} from "@mediapipe/drawing_utils";
 
 const videoElement = document.getElementsByClassName('input_video')[0];
-const canvasElement = document.getElementsByClassName('output_canvas')[0];
-const canvasCtx = canvasElement.getContext('2d');
 var mainCanvas = document.getElementsByClassName('main_canvas')[0];
 var mainCanvasCtx = mainCanvas.getContext('2d');
 const indices = {"WRIST": 0,
@@ -27,10 +25,22 @@ const indices = {"WRIST": 0,
     "PINKY_DIP": 19,
     "PINKY_TIP": 20
 }
-let window_height = window.innerHeight;
-let window_width = window.innerWidth;
-mainCanvas.width  = window_width;
-mainCanvas.height = window_height;
+
+mainCanvas.width  = window.innerWidth;
+mainCanvas.height = window.innerHeight;
+
+function resize() {
+    var width;
+    var height;
+        height = window.innerHeight;
+        width = window.innerWidth;
+
+    mainCanvas.width = width;
+    mainCanvas.height = height;
+};
+
+window.addEventListener('resize', resize, false);
+
 function correctPosition(results) {
     let correct = {"Left": false, "Right": false};
 
@@ -71,38 +81,26 @@ function correctPosition(results) {
     return correct;
 }
 
-function make_base() {
-    let base_image = new Image();
-    base_image.src = 'whatever.jpg';
-    base_image.onload = function(){
-        mainCanvasCtx.drawImage(base_image, 0, 0);
-    }
-}
-
 function distance(a, b){
     return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2) + Math.pow(a.z - b.z, 2))
 }
 
 function onResults(results) {
-    canvasCtx.save();
-    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
     mainCanvasCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
-    canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
     if (results.multiHandLandmarks) {
         let correct = correctPosition(results);
         console.log(correct);
         for (const landmarks of results.multiHandLandmarks) {
-            const real_values = [landmarks[indices.INDEX_FINGER_TIP].x*window_width, landmarks[indices.INDEX_FINGER_TIP].y*window_height]
-            console.log((1-landmarks[indices.INDEX_FINGER_TIP].x) * window_width);
+            const real_values = [landmarks[indices.INDEX_FINGER_TIP].x*mainCanvas.width, landmarks[indices.INDEX_FINGER_TIP].y*mainCanvas.height]
+            console.log((1-landmarks[indices.INDEX_FINGER_TIP].x) * mainCanvas.width);
             mainCanvasCtx.beginPath();
             mainCanvasCtx.arc(real_values[0], real_values[1], 50, 0, 2 * Math.PI);
+            mainCanvasCtx.strokeStyle = "#e3e3e3";
             mainCanvasCtx.stroke();
             // drawLandmarks(mainCanvasCtx, [landmarks[indices.INDEX_FINGER_DIP]], {color: '#FF0000', lineWidth: 2});
         }
     }
-    // mainCanvasCtx.restore();
-    canvasCtx.restore();
 }
 
 const hands = new Hands({locateFile: (file) => {
