@@ -1,0 +1,22 @@
+.output_canvas {
+    -webkit-transform: scaleX(-1);
+    transform: scaleX(-1);
+    position:absolute;
+    z-index: 0;
+    bottom:4%;
+    left:2%;
+    width:25%;
+    height:25%;
+}
+
+.main_canvas{
+    -webkit-transform: scaleX(-1);
+    transform: scaleX(-1);
+    position:absolute;
+    z-index: 1;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    border:1px solid #000000;
+}
