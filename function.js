@@ -23,10 +23,22 @@ const indices = {"WRIST": 0,
     "PINKY_DIP": 19,
     "PINKY_TIP": 20
 }
-let window_height = window.innerHeight;
-let window_width = window.innerWidth;
-mainCanvas.width  = window_width;
-mainCanvas.height = window_height;
+
+mainCanvas.width  = window.innerWidth;
+mainCanvas.height = window.innerHeight;
+
+function resize() {
+    var width;
+    var height;
+        height = window.innerHeight;
+        width = window.innerWidth;
+
+    mainCanvas.width = width;
+    mainCanvas.height = height;
+};
+
+window.addEventListener('resize', resize, false);
+
 const SCORE_THRESHOLD=0.8;
 var PATH = [];
 const PATH_LIFETIME = 2000;
@@ -110,7 +122,7 @@ function correctPosition(results) {
             if (mcp_check && index_check && middle_check && Math.abs(dtip - ddip) < 0.01 && Math.abs(dtip - dpip) < 0.009 && Math.abs(dpip - ddip) < 0.009) {
                 correct["Right"] = true;
 
-                PATH.push([Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].x*window_width), Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].y*window_height), new Date().getTime()]);
+                PATH.push([Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].x*mainCanvas.width), Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].y*mainCanvas.height), new Date().getTime()]);
             }
         }
         if (hand_label === "Right") {
@@ -141,8 +153,9 @@ function onResults(results) {
             keepRecentPartOfPath();
             for (const landmarks of results.multiHandLandmarks) {
                 mainCanvasCtx.beginPath();
-                const real_values = [landmarks[indices.INDEX_FINGER_TIP].x * window_width, landmarks[indices.INDEX_FINGER_TIP].y * window_height];
+                const real_values = [landmarks[indices.INDEX_FINGER_TIP].x * mainCanvas.width, landmarks[indices.INDEX_FINGER_TIP].y * mainCanvas.height];
                 mainCanvasCtx.arc(real_values[0], real_values[1], 50, 0, 2 * Math.PI);
+                mainCanvasCtx.strokeStyle = "#e3e3e3";
                 mainCanvasCtx.stroke();
                 mainCanvasCtx.beginPath();
                 if (PATH.length !== 0) {
@@ -159,6 +172,7 @@ function onResults(results) {
                     mainCanvasCtx.closePath();
                     mainCanvasCtx.fill();
                 }
+            mainCanvasCtx.strokeStyle = "#e3e3e3";
                 mainCanvasCtx.stroke();
             }
             let score = calculateRoundness();
@@ -187,8 +201,8 @@ const camera = new Camera(videoElement, {
     onFrame: async () => {
         await hands.send({image: videoElement});
     },
-    width: window_width,
-    height: window_height
+    width: mainCanvas.width,
+    height: mainCanvas.height
 });
 
 camera.start();
