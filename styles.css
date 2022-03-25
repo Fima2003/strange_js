@@ -8,7 +8,7 @@ body {
   background-color: #171717;
 }
 
-.input_video {
+#input_video {
     -webkit-transform: scaleX(-1);
     transform: scaleX(-1);
     position: absolute;
@@ -20,7 +20,7 @@ body {
     margin: 1em;
 }
 
-.main_canvas{
+#main_canvas{
     -webkit-transform: scaleX(-1);
     transform: scaleX(-1);
     position:absolute;

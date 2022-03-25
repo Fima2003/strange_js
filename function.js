@@ -1,7 +1,7 @@
 // import {drawConnectors, drawLandmarks} from "@mediapipe/drawing_utils";
 
-const videoElement = document.getElementsByClassName('input_video')[0];
-var mainCanvas = document.getElementsByClassName('main_canvas')[0];
+const videoElement = document.getElementById('input_video');
+var mainCanvas = document.getElementById('main_canvas');
 var mainCanvasCtx = mainCanvas.getContext('2d');
 const indices = {"WRIST": 0,
     "THUMB_CMC": 1,
@@ -120,8 +120,8 @@ const camera = new Camera(videoElement, {
     onFrame: async () => {
         await hands.send({image: videoElement});
     },
-    width: 1280,
-    height: 720
+    width: window.width,
+    height: window.height
 });
 
 camera.start();
