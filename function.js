@@ -1,5 +1,3 @@
-// import {drawConnectors, drawLandmarks} from "@mediapipe/drawing_utils";
-
 const videoElement = document.getElementById('input_video');
 var mainCanvas = document.getElementById('main_canvas');
 var mainCanvasCtx = mainCanvas.getContext('2d');
@@ -25,21 +23,63 @@ const indices = {"WRIST": 0,
     "PINKY_DIP": 19,
     "PINKY_TIP": 20
 }
+let window_height = window.innerHeight;
+let window_width = window.innerWidth;
+mainCanvas.width  = window_width;
+mainCanvas.height = window_height;
+const SCORE_THRESHOLD=0.8;
+var PATH = [];
+const PATH_LIFETIME = 2000;
+var over = false;
 
-mainCanvas.width  = window.innerWidth;
-mainCanvas.height = window.innerHeight;
 
-function resize() {
-    var width;
-    var height;
-        height = window.innerHeight;
-        width = window.innerWidth;
+function getPolygonLength(){
+    let length = 0;
+    for (let i = 0; i < PATH.length; i++){
+        let next = i+1;
+        if (next === PATH.length){
+            next = 0;
+        }
+        length+=dist(PATH[i], PATH[next]);
+    }
+    return length;
+}
 
-    mainCanvas.width = width;
-    mainCanvas.height = height;
-};
+function getPolygonArea(){
+    console.log(PATH[0]);
+    let area = 0;
+    for (let i = 0; i < PATH.length; i++){
+        let next = i+1;
+        if (next === PATH.length){
+            next = 0;
+        }
+        area+=PATH[i][0]*PATH[next][1];
+        area-=PATH[i][1]*PATH[next][0];
+    }
+    area = Math.abs(area)/2;
+    return area;
+}
 
-window.addEventListener('resize', resize, false);
+function calculateRoundness(){
+    const area = getPolygonArea();
+    console.log("Area: " + area);
+    const length = getPolygonLength();
+    console.log("Length: " + length);
+    const R = length/(2*Math.PI);
+    console.log("Radius: " + R);
+    const circle_area = Math.PI*R*R;
+    console.log("Circle Area: " + circle_area);
+    let score = area / circle_area;
+    console.log("Score: "+ score);
+    return score;
+}
+
+function keepRecentPartOfPath(){
+    const now = new Date().getTime();
+    while(PATH.length > 0 && now-PATH[0][2] > PATH_LIFETIME){
+        PATH.shift();
+    }
+}
 
 function correctPosition(results) {
     let correct = {"Left": false, "Right": false};
@@ -48,7 +88,7 @@ function correctPosition(results) {
     let mcp_check;
     for (const [hand_index, hand_info] of handedness.entries()) {
         let hand_label = hand_info.label;
-        let hand_landmarks = results.multiHandWorldLandmarks[hand_index];
+        let hand_landmarks = results.multiHandLandmarks[hand_index];
         let dtip = distance(hand_landmarks[indices.INDEX_FINGER_TIP],
             hand_landmarks[indices.MIDDLE_FINGER_TIP])
         let ddip = distance(hand_landmarks[indices.INDEX_FINGER_DIP],
@@ -63,11 +103,14 @@ function correctPosition(results) {
         let middle_check = (hand_landmarks[indices.MIDDLE_FINGER_TIP].y < hand_landmarks[indices.MIDDLE_FINGER_DIP].y) &&
             (hand_landmarks[indices.MIDDLE_FINGER_DIP].y < hand_landmarks[indices.MIDDLE_FINGER_PIP].y) &&
             (hand_landmarks[indices.MIDDLE_FINGER_PIP].y < hand_landmarks[indices.MIDDLE_FINGER_MCP].y)
+        console.log(hand_landmarks);
 
         if (hand_label === "Left") {
             mcp_check = hand_landmarks[indices.INDEX_FINGER_MCP].x > hand_landmarks[indices.MIDDLE_FINGER_MCP].x;
             if (mcp_check && index_check && middle_check && Math.abs(dtip - ddip) < 0.01 && Math.abs(dtip - dpip) < 0.009 && Math.abs(dpip - ddip) < 0.009) {
                 correct["Right"] = true;
+
+                PATH.push([Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].x*window_width), Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].y*window_height), new Date().getTime()]);
             }
         }
         if (hand_label === "Right") {
@@ -85,20 +128,44 @@ function distance(a, b){
     return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2) + Math.pow(a.z - b.z, 2))
 }
 
-function onResults(results) {
-    mainCanvasCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+function dist(a, b){
+    return Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
+}
 
-    if (results.multiHandLandmarks) {
-        let correct = correctPosition(results);
-        console.log(correct);
-        for (const landmarks of results.multiHandLandmarks) {
-            const real_values = [landmarks[indices.INDEX_FINGER_TIP].x*mainCanvas.width, landmarks[indices.INDEX_FINGER_TIP].y*mainCanvas.height]
-            console.log((1-landmarks[indices.INDEX_FINGER_TIP].x) * mainCanvas.width);
-            mainCanvasCtx.beginPath();
-            mainCanvasCtx.arc(real_values[0], real_values[1], 50, 0, 2 * Math.PI);
-            mainCanvasCtx.strokeStyle = "#e3e3e3";
-            mainCanvasCtx.stroke();
-            // drawLandmarks(mainCanvasCtx, [landmarks[indices.INDEX_FINGER_DIP]], {color: '#FF0000', lineWidth: 2});
+function onResults(results) {
+    if (!over) {
+        mainCanvasCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+
+        if (results.multiHandLandmarks) {
+            let correct = correctPosition(results);
+            keepRecentPartOfPath();
+            for (const landmarks of results.multiHandLandmarks) {
+                mainCanvasCtx.beginPath();
+                const real_values = [landmarks[indices.INDEX_FINGER_TIP].x * window_width, landmarks[indices.INDEX_FINGER_TIP].y * window_height];
+                mainCanvasCtx.arc(real_values[0], real_values[1], 50, 0, 2 * Math.PI);
+                mainCanvasCtx.stroke();
+                mainCanvasCtx.beginPath();
+                if (PATH.length !== 0) {
+                    mainCanvasCtx.fillStyle = '#f00';
+                    mainCanvasCtx.beginPath();
+                    console.log(PATH[0][0], PATH[0][1]);
+                    mainCanvasCtx.moveTo(PATH[0][0], PATH[0][1]);
+                    // mainCanvasCtx.lineTo(10, 100);
+                    // mainCanvasCtx.lineTo(102, 650);
+                    // mainCanvasCtx.lineTo(10, 300);
+                    for (let i = 0; i < PATH.length; i++) {
+                        mainCanvasCtx.lineTo(PATH[i][0], PATH[i][1]);
+                    }
+                    mainCanvasCtx.closePath();
+                    mainCanvasCtx.fill();
+                }
+                mainCanvasCtx.stroke();
+            }
+            let score = calculateRoundness();
+            if(score > SCORE_THRESHOLD){
+                over = true;
+                console.log(over);
+            }
         }
     }
 }
@@ -120,8 +187,8 @@ const camera = new Camera(videoElement, {
     onFrame: async () => {
         await hands.send({image: videoElement});
     },
-    width: window.width,
-    height: window.height
+    width: window_width,
+    height: window_height
 });
 
 camera.start();
