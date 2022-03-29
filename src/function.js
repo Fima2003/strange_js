@@ -1,25 +1,32 @@
-const videoElement = document.getElementById('video');
+const video = document.getElementById('video');
 var canvas = document.getElementById('canvas');
 var canvasCtx = canvas.getContext('2d');
-var background = document.getElementById('background');
+
+canvas.width  = window.innerWidth;
+canvas.height = window.innerHeight;
+
+camera.start();
 
 function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  background.viewBox = `0 0 ${window.innerWidth} ${window.innerHeight}`;
+  var width;
+  var height;
+  height = window.innerHeight;
+  width = window.innerWidth;
+
+  canvas.width = width;
+  canvas.height = height;
 };
+
 window.addEventListener('resize', resize, false);
-resize()
 
-let xml = new XMLSerializer().serializeToString(document.getElementById('sling'));
-let svg64 = btoa(xml);
-let b64Start = 'data:image/svg+xml;base64,';
-let image64 = b64Start + svg64;
+const camera = new Camera(video, {
+  onFrame: async () => {
+    await hands.send({image: video});
+  },
+  width: canvas.width,
+  height: canvas.height
+});
 
-document.getElementById('sling').src = image64;
-document.getElementById('sling').onload = x=> {
-  can.getContext('2d').drawImage(circImg, 0, 0); // draw
-}
 
 const indices = {
   "WRIST": 0,
@@ -46,9 +53,9 @@ const indices = {
 }
 
 
-const SCORE_THRESHOLD=0.85;
+const SCORE_THRESHOLD=0.8;
 var PATH = [];
-const PATH_LIFETIME = 3000;
+const PATH_LIFETIME = 2000;
 var over = false;
 
 
@@ -59,9 +66,7 @@ function getPolygonLength(){
     if (next === PATH.length){
       next = 0;
     }
-    var o = {'x': PATH[i][0], 'y': PATH[i][1], 'z': 0};
-    var n = {'x': PATH[next][0], 'y': PATH[next][1], 'z': 0};
-    length+=distance(o, n);
+    length+=dist(PATH[i], PATH[next]);
   }
   return length;
 }
@@ -149,6 +154,10 @@ function distance(a, b){
   return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2) + Math.pow(a.z - b.z, 2))
 }
 
+function dist(a, b){
+  return Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
+}
+
 function onResults(results) {
   if (!over) {
     canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
@@ -156,23 +165,9 @@ function onResults(results) {
     if (results.multiHandLandmarks) {
       let correct = correctPosition(results);
       keepRecentPartOfPath();
-
       for (const landmarks of results.multiHandLandmarks) {
-        var canvasRatio = canvas.height / canvas.width;
-        var windowRatio = video.height / video.width;
-        var width;
-        var height;
-
-        if (canvasRatio < canvasRatio) {
-          height = canvas.height;
-          width = height / canvasRatio;
-        } else {
-          width = canvas.width;
-          height = width * canvasRatio;
-        }
-
         canvasCtx.beginPath();
-        const real_values = [landmarks[indices.INDEX_FINGER_TIP].x * width, landmarks[indices.INDEX_FINGER_TIP].y * height];
+        const real_values = [landmarks[indices.INDEX_FINGER_TIP].x * canvas.width, landmarks[indices.INDEX_FINGER_TIP].y * canvas.height];
         canvasCtx.arc(real_values[0], real_values[1], 50, 0, 2 * Math.PI);
         canvasCtx.strokeStyle = "#e3e3e3";
         canvasCtx.stroke();
@@ -215,14 +210,4 @@ hands.setOptions({
 });
 
 hands.onResults(onResults);
-
-const camera = new Camera(videoElement, {
-  onFrame: async () => {
-    await hands.send({image: videoElement});
-  },
-  width: 1280,
-  height: 720
-});
-
-camera.start();
 
