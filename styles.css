@@ -7,33 +7,26 @@ html, body, .container, #background {
 body {
   background-color: #171717;
 }
+
 #video {
-    -webkit-transform: scaleX(-1);
-    transform: scaleX(-1);
-    position: absolute;
-    z-index: 1;
-    width: 24em;
-    max-width: calc(100% - 2em);
-    height: auto;
-    bottom: 0;
-    margin: 1em;
-}
-
-#canvas{
-    -webkit-transform: scaleX(-1);
-    transform: scaleX(-1);
-    position:absolute;
-    z-index: 0;
-    top: 0;
-    left: 0;
-}
-
-.hand {
-  fill: green;
-  width: 32px;
-  height: 32px;
+  -webkit-transform: scaleX(-1);
+  transform: scaleX(-1);
   position:absolute;
-  top: 188px;
-  left: 188px;
+  z-index: 1;
+  bottom:4%;
+  left:2%;
+  width:25%;
+  height:25%;
+}
+
+#canvas {
+  -webkit-transform: scaleX(-1);
+  transform: scaleX(-1);
+  position:absolute;
+  z-index: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
 }
 

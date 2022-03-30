@@ -1,25 +1,27 @@
 const videoElement = document.getElementById('video');
 var canvas = document.getElementById('canvas');
 var canvasCtx = canvas.getContext('2d');
-var background = document.getElementById('background');
+//var background = document.getElementById('container');
 
 function resize() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  background.viewBox = `0 0 ${window.innerWidth} ${window.innerHeight}`;
 };
+
 window.addEventListener('resize', resize, false);
+
+document.addEventListener('onload', setBackground, false);
 resize()
 
-let xml = new XMLSerializer().serializeToString(document.getElementById('sling'));
+/*let xml = new XMLSerializer().serializeToString(document.getElementById('sling'));
 let svg64 = btoa(xml);
 let b64Start = 'data:image/svg+xml;base64,';
 let image64 = b64Start + svg64;
 
 document.getElementById('sling').src = image64;
 document.getElementById('sling').onload = x=> {
-  can.getContext('2d').drawImage(circImg, 0, 0); // draw
-}
+  canvas.getContext('2d').drawImage(circImg, 0, 0);
+}*/
 
 const indices = {
   "WRIST": 0,
@@ -45,12 +47,34 @@ const indices = {
   "PINKY_TIP": 20
 }
 
-
-const SCORE_THRESHOLD=0.85;
+const SCORE_THRESHOLD=0.92;
 var PATH = [];
-const PATH_LIFETIME = 3000;
-var over = false;
+const PATH_LIFETIME = 1000;
 
+var over = false;
+const RADIUS = (canvas.height < canvas.width) ? (canvas.height/2 - 20) : (canvas.width/2 - 20);
+var score = NaN;
+var correct = {};
+var background = new Image();
+
+function setBackground(){
+  let number = Math.floor(Math.random()*20 + 1);
+  let string = 'DB/' + number + '/' + number + '.jpg';
+  console.log(string);
+  background.src = string;
+}
+
+function drawImageScaled(img, ctx) {
+  var canvas = ctx.canvas ;
+  var hRatio = canvas.width  / img.width;
+  var vRatio =  canvas.height / img.height;
+  var ratio  = Math.min ( hRatio, vRatio);
+  var centerShift_x = ( canvas.width - img.width*ratio ) / 2;
+  var centerShift_y = ( canvas.height - img.height*ratio ) / 2;
+  ctx.clearRect(0,0,canvas.width, canvas.height);
+  ctx.drawImage(img, 0,0, img.width, img.height,
+    centerShift_x,centerShift_y,img.width*ratio, img.height*ratio);
+}
 
 function getPolygonLength(){
   let length = 0;
@@ -59,15 +83,12 @@ function getPolygonLength(){
     if (next === PATH.length){
       next = 0;
     }
-    var o = {'x': PATH[i][0], 'y': PATH[i][1], 'z': 0};
-    var n = {'x': PATH[next][0], 'y': PATH[next][1], 'z': 0};
-    length+=distance(o, n);
+    length+=distance({'x': PATH[i][0], 'y': PATH[i][1], 'z': 0}, {'x': PATH[next][0], 'y': PATH[next][1], 'z': 0});
   }
   return length;
 }
 
 function getPolygonArea(){
-  console.log(PATH[0]);
   let area = 0;
   for (let i = 0; i < PATH.length; i++){
     let next = i+1;
@@ -83,16 +104,10 @@ function getPolygonArea(){
 
 function calculateRoundness(){
   const area = getPolygonArea();
-  console.log("Area: " + area);
   const length = getPolygonLength();
-  console.log("Length: " + length);
   const R = length/(2*Math.PI);
-  console.log("Radius: " + R);
   const circle_area = Math.PI*R*R;
-  console.log("Circle Area: " + circle_area);
-  let score = area / circle_area;
-  console.log("Score: "+ score);
-  return score;
+  return area / circle_area;
 }
 
 function keepRecentPartOfPath(){
@@ -102,11 +117,17 @@ function keepRecentPartOfPath(){
   }
 }
 
+function dist(a, b){
+  return Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
+}
+
 function correctPosition(results) {
   let correct = {"Left": false, "Right": false};
 
   const handedness = results.multiHandedness;
   let mcp_check;
+  let i = 0;
+  let rightPoint;
   for (const [hand_index, hand_info] of handedness.entries()) {
     let hand_label = hand_info.label;
     let hand_landmarks = results.multiHandLandmarks[hand_index];
@@ -124,20 +145,26 @@ function correctPosition(results) {
     let middle_check = (hand_landmarks[indices.MIDDLE_FINGER_TIP].y < hand_landmarks[indices.MIDDLE_FINGER_DIP].y) &&
       (hand_landmarks[indices.MIDDLE_FINGER_DIP].y < hand_landmarks[indices.MIDDLE_FINGER_PIP].y) &&
       (hand_landmarks[indices.MIDDLE_FINGER_PIP].y < hand_landmarks[indices.MIDDLE_FINGER_MCP].y)
-    console.log(hand_landmarks);
 
     if (hand_label === "Left") {
       mcp_check = hand_landmarks[indices.INDEX_FINGER_MCP].x > hand_landmarks[indices.MIDDLE_FINGER_MCP].x;
       if (mcp_check && index_check && middle_check && Math.abs(dtip - ddip) < 0.01 && Math.abs(dtip - dpip) < 0.009 && Math.abs(dpip - ddip) < 0.009) {
         correct["Right"] = true;
-
-        PATH.push([Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].x*canvas.width), Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].y*canvas.height), new Date().getTime()]);
+        rightPoint = [Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].x*canvas.width), Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].y*canvas.height), new Date().getTime()];
       }
     }
     if (hand_label === "Right") {
       mcp_check = hand_landmarks[indices.INDEX_FINGER_MCP].x < hand_landmarks[indices.MIDDLE_FINGER_MCP].x;
       if (mcp_check && index_check && middle_check && Math.abs(dtip - ddip) < 0.03 && Math.abs(dtip - dpip) < 0.009 && Math.abs(dpip - ddip) < 0.009) {
         correct["Left"] = true;
+      }
+    }
+    i+=1;
+    if (i === 2 && correct["Right"] && correct["Left"]){
+      if(PATH.length !== 0 && dist(PATH[PATH.length - 1], rightPoint) > 20) {
+        PATH.push(rightPoint);
+      }else if(PATH.length === 0){
+        PATH.push(rightPoint);
       }
     }
   }
@@ -149,56 +176,63 @@ function distance(a, b){
   return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2) + Math.pow(a.z - b.z, 2))
 }
 
+function drawHandEffects(position, radius) {
+  canvasCtx.beginPath();
+  canvasCtx.arc(position[0], position[1], radius, 0, 2 * Math.PI);
+  canvasCtx.strokeStyle = 'green';
+  canvasCtx.stroke();
+  canvasCtx.beginPath();
+  if (PATH.length !== 0) {
+    canvasCtx.beginPath();
+    for (let i = 0; i < PATH.length; i++) {
+      canvasCtx.lineTo(PATH[i][0], PATH[i][1]);
+    }
+    canvasCtx.closePath();
+  }
+  canvasCtx.stroke();
+}
+
+function drawCircle(){
+  canvasCtx.beginPath();
+  canvasCtx.fillStyle = 'red';
+  canvasCtx.arc(canvas.width / 2, canvas.height / 2, RADIUS * score, 0, 2 * Math.PI);
+  canvasCtx.fill();
+}
+
 function onResults(results) {
   if (!over) {
-    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-
+    if (!over) {
+      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+      drawImageScaled(background, canvasCtx);
+      // canvasCtx.drawImage(background, 0, 0, background.width, background.height);
+      if (!isNaN(score)) {
+        drawCircle();
+        if (score > SCORE_THRESHOLD){
+          over = true;
+          console.log("Over:" + over);
+        }
+      }
+      correct = {"Left": false, "Right": false};
+      score = calculateRoundness();
+    }
     if (results.multiHandLandmarks) {
-      let correct = correctPosition(results);
+      if(over){
+        canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+        canvasCtx.drawImage(background, 0, 0);
+        drawCircle();
+      }
+      correct = correctPosition(results);
       keepRecentPartOfPath();
-
       for (const landmarks of results.multiHandLandmarks) {
-        var canvasRatio = canvas.height / canvas.width;
-        var windowRatio = video.height / video.width;
-        var width;
-        var height;
-
-        if (canvasRatio < canvasRatio) {
-          height = canvas.height;
-          width = height / canvasRatio;
-        } else {
-          width = canvas.width;
-          height = width * canvasRatio;
-        }
-
-        canvasCtx.beginPath();
-        const real_values = [landmarks[indices.INDEX_FINGER_TIP].x * width, landmarks[indices.INDEX_FINGER_TIP].y * height];
-        canvasCtx.arc(real_values[0], real_values[1], 50, 0, 2 * Math.PI);
-        canvasCtx.strokeStyle = "#e3e3e3";
-        canvasCtx.stroke();
-        canvasCtx.beginPath();
-        if (PATH.length !== 0) {
-          canvasCtx.fillStyle = '#f00';
-          canvasCtx.beginPath();
-          console.log(PATH[0][0], PATH[0][1]);
-          canvasCtx.moveTo(PATH[0][0], PATH[0][1]);
-          // canvasCtx.lineTo(10, 100);
-          // canvasCtx.lineTo(102, 650);
-          // canvasCtx.lineTo(10, 300);
-          for (let i = 0; i < PATH.length; i++) {
-            canvasCtx.lineTo(PATH[i][0], PATH[i][1]);
-          }
-          canvasCtx.closePath();
-          canvasCtx.fill();
-        }
-        canvasCtx.strokeStyle = "#e3e3e3";
-        canvasCtx.stroke();
+        const real_values = [landmarks[indices.INDEX_FINGER_TIP].x * canvas.width, landmarks[indices.INDEX_FINGER_TIP].y * canvas.height];
+        drawHandEffects(real_values, 50);
       }
-      let score = calculateRoundness();
-      if(score > SCORE_THRESHOLD){
-        over = true;
-        console.log(over);
-      }
+
+    }
+    score = calculateRoundness();
+    if(score > SCORE_THRESHOLD){
+      over = true;
+      console.log(over);
     }
   }
 }
@@ -225,4 +259,3 @@ const camera = new Camera(videoElement, {
 });
 
 camera.start();
-
