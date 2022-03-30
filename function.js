@@ -29,11 +29,33 @@ let window_height = window.innerHeight;
 let window_width = window.innerWidth;
 mainCanvas.width  = window_width;
 mainCanvas.height = window_height;
-const SCORE_THRESHOLD=0.8;
+const SCORE_THRESHOLD=0.92;
 var PATH = [];
-const PATH_LIFETIME = 2000;
+const PATH_LIFETIME = 1000;
 var over = false;
+const RADIUS = (window_height < window_width) ? (window_height/2 - 20) : (window_width/2 - 20);
+var score = NaN;
+var correct = {};
+var background = new Image();
 
+function setBackground(){
+    let number = Math.floor(Math.random()*20 + 1);
+    let string = '../DB/' + number + '/' + number + '.jpg';
+    console.log(string);
+    background.src = string;
+}
+
+function drawImageScaled(img, ctx) {
+    var canvas = ctx.canvas ;
+    var hRatio = canvas.width  / img.width;
+    var vRatio =  canvas.height / img.height;
+    var ratio  = Math.min ( hRatio, vRatio);
+    var centerShift_x = ( canvas.width - img.width*ratio ) / 2;
+    var centerShift_y = ( canvas.height - img.height*ratio ) / 2;
+    ctx.clearRect(0,0,canvas.width, canvas.height);
+    ctx.drawImage(img, 0,0, img.width, img.height,
+        centerShift_x,centerShift_y,img.width*ratio, img.height*ratio);
+}
 
 function getPolygonLength(){
     let length = 0;
@@ -48,7 +70,6 @@ function getPolygonLength(){
 }
 
 function getPolygonArea(){
-    console.log(PATH[0]);
     let area = 0;
     for (let i = 0; i < PATH.length; i++){
         let next = i+1;
@@ -64,16 +85,10 @@ function getPolygonArea(){
 
 function calculateRoundness(){
     const area = getPolygonArea();
-    console.log("Area: " + area);
     const length = getPolygonLength();
-    console.log("Length: " + length);
     const R = length/(2*Math.PI);
-    console.log("Radius: " + R);
     const circle_area = Math.PI*R*R;
-    console.log("Circle Area: " + circle_area);
-    let score = area / circle_area;
-    console.log("Score: "+ score);
-    return score;
+    return area / circle_area;
 }
 
 function keepRecentPartOfPath(){
@@ -83,11 +98,17 @@ function keepRecentPartOfPath(){
     }
 }
 
+function dist(a, b){
+    return Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
+}
+
 function correctPosition(results) {
     let correct = {"Left": false, "Right": false};
 
     const handedness = results.multiHandedness;
     let mcp_check;
+    let i = 0;
+    let rightPoint;
     for (const [hand_index, hand_info] of handedness.entries()) {
         let hand_label = hand_info.label;
         let hand_landmarks = results.multiHandLandmarks[hand_index];
@@ -105,20 +126,26 @@ function correctPosition(results) {
         let middle_check = (hand_landmarks[indices.MIDDLE_FINGER_TIP].y < hand_landmarks[indices.MIDDLE_FINGER_DIP].y) &&
             (hand_landmarks[indices.MIDDLE_FINGER_DIP].y < hand_landmarks[indices.MIDDLE_FINGER_PIP].y) &&
             (hand_landmarks[indices.MIDDLE_FINGER_PIP].y < hand_landmarks[indices.MIDDLE_FINGER_MCP].y)
-        console.log(hand_landmarks);
 
         if (hand_label === "Left") {
             mcp_check = hand_landmarks[indices.INDEX_FINGER_MCP].x > hand_landmarks[indices.MIDDLE_FINGER_MCP].x;
             if (mcp_check && index_check && middle_check && Math.abs(dtip - ddip) < 0.01 && Math.abs(dtip - dpip) < 0.009 && Math.abs(dpip - ddip) < 0.009) {
                 correct["Right"] = true;
-
-                PATH.push([Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].x*window_width), Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].y*window_height), new Date().getTime()]);
+                rightPoint = [Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].x*window_width), Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].y*window_height), new Date().getTime()];
             }
         }
         if (hand_label === "Right") {
             mcp_check = hand_landmarks[indices.INDEX_FINGER_MCP].x < hand_landmarks[indices.MIDDLE_FINGER_MCP].x;
             if (mcp_check && index_check && middle_check && Math.abs(dtip - ddip) < 0.03 && Math.abs(dtip - dpip) < 0.009 && Math.abs(dpip - ddip) < 0.009) {
                 correct["Left"] = true;
+            }
+        }
+        i+=1;
+        if (i === 2 && correct["Right"] && correct["Left"]){
+            if(PATH.length !== 0 && dist(PATH[PATH.length - 1], rightPoint) > 20) {
+                PATH.push(rightPoint);
+            }else if(PATH.length === 0){
+                PATH.push(rightPoint);
             }
         }
     }
@@ -130,8 +157,26 @@ function distance(a, b){
     return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2) + Math.pow(a.z - b.z, 2))
 }
 
-function dist(a, b){
-    return Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
+function drawHandEffects(position, radius) {
+    mainCanvasCtx.beginPath();
+    mainCanvasCtx.arc(position[0], position[1], radius, 0, 2 * Math.PI);
+    mainCanvasCtx.stroke();
+    mainCanvasCtx.beginPath();
+    if (PATH.length !== 0) {
+        mainCanvasCtx.beginPath();
+        for (let i = 0; i < PATH.length; i++) {
+            mainCanvasCtx.lineTo(PATH[i][0], PATH[i][1]);
+        }
+        mainCanvasCtx.closePath();
+    }
+    mainCanvasCtx.stroke();
+}
+
+function drawCircle(){
+    mainCanvasCtx.beginPath();
+    mainCanvasCtx.fillStyle = 'red';
+    mainCanvasCtx.arc(window_width / 2, window_height / 2, RADIUS * score, 0, 2 * Math.PI);
+    mainCanvasCtx.fill();
 }
 
 function onResults(results) {
@@ -141,37 +186,29 @@ function onResults(results) {
 
     if (!over) {
         mainCanvasCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
-
-        if (results.multiHandLandmarks) {
-            let correct = correctPosition(results);
-            keepRecentPartOfPath();
-            for (const landmarks of results.multiHandLandmarks) {
-                mainCanvasCtx.beginPath();
-                const real_values = [landmarks[indices.INDEX_FINGER_TIP].x * window_width, landmarks[indices.INDEX_FINGER_TIP].y * window_height];
-                mainCanvasCtx.arc(real_values[0], real_values[1], 50, 0, 2 * Math.PI);
-                mainCanvasCtx.stroke();
-                mainCanvasCtx.beginPath();
-                if (PATH.length !== 0) {
-                    mainCanvasCtx.fillStyle = '#f00';
-                    mainCanvasCtx.beginPath();
-                    console.log(PATH[0][0], PATH[0][1]);
-                    mainCanvasCtx.moveTo(PATH[0][0], PATH[0][1]);
-                    // mainCanvasCtx.lineTo(10, 100);
-                    // mainCanvasCtx.lineTo(102, 650);
-                    // mainCanvasCtx.lineTo(10, 300);
-                    for (let i = 0; i < PATH.length; i++) {
-                        mainCanvasCtx.lineTo(PATH[i][0], PATH[i][1]);
-                    }
-                    mainCanvasCtx.closePath();
-                    mainCanvasCtx.fill();
-                }
-                mainCanvasCtx.stroke();
-            }
-            let score = calculateRoundness();
-            if(score > SCORE_THRESHOLD){
+        drawImageScaled(background, mainCanvasCtx);
+        // mainCanvasCtx.drawImage(background, 0, 0, background.width, background.height);
+        if (!isNaN(score)) {
+            drawCircle();
+            if (score > SCORE_THRESHOLD){
                 over = true;
-                console.log(over);
+                console.log("Over:" + over);
             }
+        }
+        correct = {"Left": false, "Right": false};
+        score = calculateRoundness();
+    }
+    if (results.multiHandLandmarks) {
+        if(over){
+            mainCanvasCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+            mainCanvasCtx.drawImage(background, 0, 0);
+            drawCircle();
+        }
+        correct = correctPosition(results);
+        keepRecentPartOfPath();
+        for (const landmarks of results.multiHandLandmarks) {
+            const real_values = [landmarks[indices.INDEX_FINGER_TIP].x * window_width, landmarks[indices.INDEX_FINGER_TIP].y * window_height];
+            drawHandEffects(real_values, 50);
         }
     }
 
@@ -199,4 +236,6 @@ const camera = new Camera(videoElement, {
     height: window_height
 });
 
-camera.start();
+background.onload = () => {
+    camera.start();
+}
