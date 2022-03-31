@@ -1,32 +1,86 @@
-html, body, .container, #background {
-  width:  100%;
-  height: 100%;
-  margin: 0;
+
+
+.output_canvas {
+    -webkit-transform: scaleX(-1);
+    transform: scaleX(-1);
+    position:absolute;
+    z-index: 1;
+    bottom:4%;
+    left:2%;
+    width:25%;
+    height:25%;
 }
 
-body {
-  background-color: #171717;
+.main_canvas{
+    -webkit-transform: scaleX(-1);
+    transform: scaleX(-1);
+    position:absolute;
+    z-index: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
 }
 
-#video {
-  -webkit-transform: scaleX(-1);
-  transform: scaleX(-1);
-  position:absolute;
-  z-index: 1;
-  bottom:4%;
-  left:2%;
-  width:25%;
-  height:25%;
+body{
+    background-color: aqua;
 }
 
-#canvas {
-  -webkit-transform: scaleX(-1);
-  transform: scaleX(-1);
-  position:absolute;
-  z-index: 0;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
+.appbar{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 8%;
+    background-color: bisque;
+    z-index: 0;
 }
 
+button {
+    outline: none;
+}
+.custom-btn {
+    width: 100pt;
+    height: 50%;
+    padding: 10px 25px;
+    border: 2px solid #000;
+    font-family: 'Lato', sans-serif;
+    font-weight: 500;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+}
+
+.custom-btn:after {
+    position: absolute;
+    content: " ";
+    top: 0;
+    left: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    transition: all 0.3s ease;
+    -webkit-transform: scale(.1);
+    transform: scale(.1);
+}
+.custom-btn:hover {
+    color: #fff;
+}
+.custom-btn:hover:after {
+    background: #000;
+    -webkit-transform: scale(1);
+    transform: scale(1);
+}
+
+#donate{
+    top: 25%;
+    left: 10%;
+}
+
+#share{
+    top: 25%;
+    left: 5%;
+}

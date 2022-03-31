@@ -1,30 +1,9 @@
-const videoElement = document.getElementById('video');
-var canvas = document.getElementById('canvas');
-var canvasCtx = canvas.getContext('2d');
-//var background = document.getElementById('container');
-
-function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-};
-
-window.addEventListener('resize', resize, false);
-
-document.addEventListener('onload', setBackground, false);
-resize()
-
-/*let xml = new XMLSerializer().serializeToString(document.getElementById('sling'));
-let svg64 = btoa(xml);
-let b64Start = 'data:image/svg+xml;base64,';
-let image64 = b64Start + svg64;
-
-document.getElementById('sling').src = image64;
-document.getElementById('sling').onload = x=> {
-  canvas.getContext('2d').drawImage(circImg, 0, 0);
-}*/
-
-const indices = {
-  "WRIST": 0,
+const videoElement = document.getElementsByClassName('input_video')[0];
+const canvasElement = document.getElementsByClassName('output_canvas')[0];
+const canvasCtx = canvasElement.getContext('2d');
+var mainCanvas = document.getElementsByClassName('main_canvas')[0];
+var mainCanvasCtx = mainCanvas.getContext('2d');
+const indices = {"WRIST": 0,
   "THUMB_CMC": 1,
   "THUMB_MCP": 2,
   "THUMB_IP": 3,
@@ -46,20 +25,23 @@ const indices = {
   "PINKY_DIP": 19,
   "PINKY_TIP": 20
 }
-
+let window_height = window.innerHeight;
+let window_width = window.innerWidth;
+mainCanvas.width  = window_width;
+mainCanvas.height = window_height;
 const SCORE_THRESHOLD=0.92;
 var PATH = [];
 const PATH_LIFETIME = 1000;
-
 var over = false;
-const RADIUS = (canvas.height < canvas.width) ? (canvas.height/2 - 20) : (canvas.width/2 - 20);
+const RADIUS = (window_height < window_width) ? (window_height/2 - 20) : (window_width/2 - 20);
 var score = NaN;
 var correct = {};
 var background = new Image();
 
 function setBackground(){
-  let number = Math.floor(Math.random()*20 + 1);
-  let string = 'DB/' + number + '/' + number + '.jpg';
+  let number = Math.floor(Math.random()*8 + 1);
+  number = 4;
+  let string = '/DB/' + number + '/before.jpg';
   console.log(string);
   background.src = string;
 }
@@ -83,7 +65,7 @@ function getPolygonLength(){
     if (next === PATH.length){
       next = 0;
     }
-    length+=distance({'x': PATH[i][0], 'y': PATH[i][1], 'z': 0}, {'x': PATH[next][0], 'y': PATH[next][1], 'z': 0});
+    length+=dist(PATH[i], PATH[next]);
   }
   return length;
 }
@@ -150,7 +132,7 @@ function correctPosition(results) {
       mcp_check = hand_landmarks[indices.INDEX_FINGER_MCP].x > hand_landmarks[indices.MIDDLE_FINGER_MCP].x;
       if (mcp_check && index_check && middle_check && Math.abs(dtip - ddip) < 0.01 && Math.abs(dtip - dpip) < 0.009 && Math.abs(dpip - ddip) < 0.009) {
         correct["Right"] = true;
-        rightPoint = [Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].x*canvas.width), Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].y*canvas.height), new Date().getTime()];
+        rightPoint = [Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].x*window_width), Math.abs(hand_landmarks[indices.INDEX_FINGER_TIP].y*window_height), new Date().getTime()];
       }
     }
     if (hand_label === "Right") {
@@ -177,69 +159,65 @@ function distance(a, b){
 }
 
 function drawHandEffects(position, radius) {
-  canvasCtx.beginPath();
-  canvasCtx.arc(position[0], position[1], radius, 0, 2 * Math.PI);
-  canvasCtx.strokeStyle = 'green';
-  canvasCtx.stroke();
-  canvasCtx.beginPath();
+  mainCanvasCtx.beginPath();
+  mainCanvasCtx.arc(position[0], position[1], radius, 0, 2 * Math.PI);
+  mainCanvasCtx.stroke();
+  mainCanvasCtx.beginPath();
   if (PATH.length !== 0) {
-    canvasCtx.beginPath();
+    mainCanvasCtx.beginPath();
     for (let i = 0; i < PATH.length; i++) {
-      canvasCtx.lineTo(PATH[i][0], PATH[i][1]);
+      mainCanvasCtx.lineTo(PATH[i][0], PATH[i][1]);
     }
-    canvasCtx.closePath();
+    mainCanvasCtx.closePath();
   }
-  canvasCtx.stroke();
+  mainCanvasCtx.stroke();
 }
 
 function drawCircle(){
-  canvasCtx.beginPath();
-  canvasCtx.fillStyle = 'red';
-  canvasCtx.arc(canvas.width / 2, canvas.height / 2, RADIUS * score, 0, 2 * Math.PI);
-  canvasCtx.fill();
+  mainCanvasCtx.beginPath();
+  mainCanvasCtx.fillStyle = 'red';
+  mainCanvasCtx.arc(window_width / 2, window_height / 2, RADIUS * score, 0, 2 * Math.PI);
+  mainCanvasCtx.fill();
 }
 
 function onResults(results) {
-  if (!over) {
-    if (!over) {
-      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-      drawImageScaled(background, canvasCtx);
-      // canvasCtx.drawImage(background, 0, 0, background.width, background.height);
-      if (!isNaN(score)) {
-        drawCircle();
-        if (score > SCORE_THRESHOLD){
-          over = true;
-          console.log("Over:" + over);
-        }
-      }
-      correct = {"Left": false, "Right": false};
-      score = calculateRoundness();
-    }
-    if (results.multiHandLandmarks) {
-      if(over){
-        canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-        canvasCtx.drawImage(background, 0, 0);
-        drawCircle();
-      }
-      correct = correctPosition(results);
-      keepRecentPartOfPath();
-      for (const landmarks of results.multiHandLandmarks) {
-        const real_values = [landmarks[indices.INDEX_FINGER_TIP].x * canvas.width, landmarks[indices.INDEX_FINGER_TIP].y * canvas.height];
-        drawHandEffects(real_values, 50);
-      }
+  canvasCtx.save();
+  canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+  canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
+  if (!over) {
+    mainCanvasCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+    drawImageScaled(background, mainCanvasCtx);
+    if (!isNaN(score)) {
+      drawCircle();
+      if (score > SCORE_THRESHOLD){
+        over = true;
+        console.log("Over:" + over);
+      }
     }
+    correct = {"Left": false, "Right": false};
     score = calculateRoundness();
-    if(score > SCORE_THRESHOLD){
-      over = true;
-      console.log(over);
+  }
+  if (results.multiHandLandmarks) {
+    if(over){
+      mainCanvasCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+      drawImageScaled(background, mainCanvasCtx);
+      drawCircle();
+    }
+    correct = correctPosition(results);
+    keepRecentPartOfPath();
+    for (const landmarks of results.multiHandLandmarks) {
+      const real_values = [landmarks[indices.INDEX_FINGER_TIP].x * window_width, landmarks[indices.INDEX_FINGER_TIP].y * window_height];
+      drawHandEffects(real_values, 50);
     }
   }
+
+  canvasCtx.restore();
 }
 
 const hands = new Hands({locateFile: (file) => {
-  return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-}});
+    return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+  }});
 
 hands.setOptions({
   maxNumHands: 2,
@@ -254,8 +232,10 @@ const camera = new Camera(videoElement, {
   onFrame: async () => {
     await hands.send({image: videoElement});
   },
-  width: 1280,
-  height: 720
+  width: window_width,
+  height: window_height
 });
 
-camera.start();
+background.onload = () => {
+  camera.start();
+}
