@@ -3,12 +3,12 @@ var canvas = document.getElementById('canvas');
 var canvasCtx = canvas.getContext('2d');
 var background = new Image();
 
-var buttonBoundaries;
-
-window.onresize = () => {
+function resize() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 };
+window.addEventListener('resize', resize, false);
+resize()
 
 setBackground();
 
@@ -164,8 +164,8 @@ function correctPosition(results) {
 }
 
 function handleButtons(rightPoint) {
-  let buttons = [...document.getElementsByClassName("button")];
-  buttons.forEach(e => { console.log(e.getBoundingClientRect()) } );
+  let buttons = document.getElementsByClass("button");
+  console.log(buttons.forEach(o => o.getBoundingClientRect()));
 }
 
 function distance(a, b){
