@@ -1,30 +1,53 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8">
-        <link rel="stylesheet" href="styles.css">
-        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-        <title>Nothing for now</title>
-    </head>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <script
+      src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro&family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <title>Dr. Strange in Ukraine</title>
+  </head>
 
-<body onload="setBackground()">
+  <body onload="setBackground()">
     <div class="main_container">
-        <canvas class="main_canvas"></canvas>
-        <div class="appbar" id="header">
-            <button class="custom-btn btn-10" id="share">Share</button>
-            <button class="custom-btn btn-10" id="donate">Donate</button>
-        </div>
+      <canvas class="secondary_canvas"></canvas>
+      <canvas class="main_canvas"></canvas>
     </div>
     <div class="videoCamera">
-        <video class="input_video" style="display: none;"></video>
-        <canvas class="output_canvas"></canvas>
+      <video class="input_video" style="display: none"></video>
+      <canvas class="output_canvas"></canvas>
+    </div>
+    <div class="information">
+      <div id="location"></div>
+      <div id="score">0% of portal</div>
+      <div class="actions">
+        <button class="custom-btn" id="share">Share</button>
+        <button class="custom-btn" id="donate">Donate</button>
+      </div>
+      <button class="next-btn" id="next">Next</button>
     </div>
     <script src="js_source/dr_strange_algorithm.js"></script>
     <script src="js_source/positioned_functions.js"></script>
-</body>
+  </body>
 </html>
-
