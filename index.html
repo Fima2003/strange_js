@@ -26,17 +26,23 @@
       href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro&family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <title>Dr. Strange in Ukraine</title>
   </head>
 
   <body onload="setBackground()">
+    <div class="loader"></div>
     <div class="main_container">
       <canvas class="secondary_canvas"></canvas>
       <canvas class="main_canvas"></canvas>
     </div>
     <div class="videoCamera">
       <video class="input_video" style="display: none"></video>
-      <canvas class="output_canvas"></canvas>
+      <div class="tooltip">What to do?
+        <img class="tooltiptext" src="/assets/actual dr_strange.gif"/>
+      </div>
+      <canvas class="output_canvas">
+      </canvas>
     </div>
     <div class="information">
       <div id="location"></div>
@@ -46,8 +52,10 @@
         <button class="custom-btn" id="donate">Donate</button>
       </div>
       <button class="next-btn" id="next">Next</button>
+      <a href="https://github.com/Fima2003/strange_js" target="_blank" id="source">source code</a>
     </div>
     <script src="js_source/dr_strange_algorithm.js"></script>
     <script src="js_source/positioned_functions.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
   </body>
 </html>

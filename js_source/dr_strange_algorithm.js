@@ -68,13 +68,13 @@ var background = new Image();
 var secondaryBackground = new Image();
 
 function setBackground() {
-  let number = Math.floor(Math.random() * 7 + 1);
+  let number = Math.floor(Math.random() * 9 + 1);
   data_point = number;
   let string = "/DB/" + number + "/before.jpg";
   let secondaryString = "/DB/" + number + "/after.jpg";
   background.src = string;
   secondaryBackground.src = secondaryString;
-  locationElement.innerText = `This was ${data[number]}`;
+  locationElement.innerHTML = `This <span class='was'>was</span> ${data[number]}`;
 }
 
 function drawImageScaled(img, ctx) {
@@ -239,6 +239,10 @@ function distance_3d(a, b) {
 function drawHandEffects(position, radius) {
   mainCanvasCtx.beginPath();
   mainCanvasCtx.arc(position[0], position[1], radius, 0, 2 * Math.PI);
+  mainCanvasCtx.lineWidth = 3;
+  mainCanvasCtx.strokeStyle = "#3D348B";
+  mainCanvasCtx.fillStyle = "#3D348B";
+  mainCanvasCtx.fill();
   mainCanvasCtx.stroke();
   mainCanvasCtx.beginPath();
   if (PATH.length !== 0) {
@@ -246,6 +250,8 @@ function drawHandEffects(position, radius) {
     for (let i = 0; i < PATH.length; i++) {
       mainCanvasCtx.lineTo(PATH[i][0], PATH[i][1]);
     }
+    mainCanvasCtx.lineWidth = 2;
+    mainCanvasCtx.strokeStyle = "yellow";
     mainCanvasCtx.closePath();
   }
   mainCanvasCtx.stroke();
@@ -321,7 +327,7 @@ function onResults(results) {
   let string;
   if (isNaN(score)) {
     string = "0";
-  } else if (score > SCORE_THRESHOLD) {
+  } else if (over) {
     string = "100";
   } else {
     string = Math.floor(score * 100);
@@ -346,9 +352,8 @@ function onResults(results) {
     if (over) {
       camera.stop();
       canvasElement.style.opacity = "0";
-      locationElement.innerText = `This is ${data[data_point]}`;
-      // mainCanvasCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
-      // drawImageScaled(background, mainCanvasCtx);
+      locationElement.innerHTML = `This <span class='is'>is</span> ${data[data_point]}`;
+      document.getElementsByClassName('tooltip')[0].style.display = 'none';
       expandCircle();
     }
     correct = correctPosition(results);
@@ -358,7 +363,7 @@ function onResults(results) {
         landmarks[indices.INDEX_FINGER_TIP].x * window_width,
         landmarks[indices.INDEX_FINGER_TIP].y * window_height,
       ];
-      drawHandEffects(real_values, 50);
+      drawHandEffects(real_values, 20);
     }
   }
 
@@ -389,5 +394,6 @@ const camera = new Camera(videoElement, {
 });
 
 background.onload = () => {
+  document.getElementsByClassName('loader')[0].style.display = 'none';
   camera.start();
 };
