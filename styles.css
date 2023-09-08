@@ -16,7 +16,7 @@
     border-radius: 5px;
     border: 1px solid black;
     box-shadow: 5px 5px black;
-    transition: all 3s ease;
+    transition: all 1s ease;
 }
 
 .tooltip {
@@ -222,4 +222,8 @@ opacity: 1;
     height: 400px;
     overflow: scroll;
     margin: 20px 0;
+}
+
+h6{
+    margin: 10px 0 0;
 }

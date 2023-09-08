@@ -257,45 +257,49 @@ function drawHandEffects(position, radius) {
   mainCanvasCtx.stroke();
 }
 
-function drawCircle(i = 0) {
+function drawCircle(extraRadius = 0) {
+  const outerRadius = RADIUS * score + extraRadius;
+  // Make a hole inside
   mainCanvasCtx.globalCompositeOperation = "destination-out";
   mainCanvasCtx.beginPath();
   mainCanvasCtx.arc(
     window_width / 2,
     window_height / 2,
-    RADIUS * score + i,
+    outerRadius,
     0,
     2 * Math.PI
   );
   mainCanvasCtx.fill();
   mainCanvasCtx.globalCompositeOperation = "source-over";
+  // Add gradient so it looks more like a portal
+  innerRadius = 0;
+  if (RADIUS * score + extraRadius > 30) {
+    innerRadius = RADIUS * score + extraRadius - 30;
+  }
+  const gradient = mainCanvasCtx.createRadialGradient(window_width/2, window_height/2, innerRadius, window_width/2, window_height/2, outerRadius);
+  gradient.addColorStop(1, "rgba(0, 0, 0, 0.5)"); // Black with opacity 0.5 at the outer radius
+  gradient.addColorStop(0, "rgba(0, 0, 0, 0)");
+  mainCanvasCtx.fillStyle = gradient;
+  mainCanvasCtx.beginPath();
+  mainCanvasCtx.arc(window_width/2, window_height/2, outerRadius, 0, Math.PI * 2);
+  mainCanvasCtx.fill();
 }
 
 function expandCircle() {
-  const animationDuration = 3000; // 3 seconds
+  const animationDuration = 1000; // 3 seconds
   const fps = 60; // Frames per second
   const totalFrames = (animationDuration / 1000) * fps;
-  const radiusIncrement = (RADIUS * 2) / totalFrames;
+  const radiusIncrement = (RADIUS*2) / totalFrames;
 
   let currentFrame = 0;
   let radius = 0;
 
   function drawFrame() {
     if (currentFrame < totalFrames) {
-      // Clear the main canvas
-      mainCanvasCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
-
+      // mainCanvasCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+      // drawImageScaled(background, mainCanvasCtx);
       // Draw the erasing circle
-      mainCanvasCtx.globalCompositeOperation = "destination-out";
-      mainCanvasCtx.beginPath();
-      mainCanvasCtx.arc(
-        mainCanvas.width / 2,
-        mainCanvas.height / 2,
-        radius,
-        0,
-        2 * Math.PI
-      );
-      mainCanvasCtx.fill();
+      drawCircle(radius);
 
       // Increase the radius for the next frame
       radius += radiusIncrement;
@@ -310,7 +314,6 @@ function expandCircle() {
     }
   }
 
-  // Start the animation
   requestAnimationFrame(drawFrame);
 }
 
@@ -342,7 +345,6 @@ function onResults(results) {
       drawCircle();
       if (score > SCORE_THRESHOLD) {
         over = true;
-        console.log("Over:" + over);
       }
     }
     correct = { Left: false, Right: false };

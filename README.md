@@ -14,4 +14,4 @@ Once you open up a page, it will show you a picture of a city in Ukraine as it w
 
 To open a portal to Ukraine now, you just have to replicate his movements, like this: ![Tutorial](./assets/tutorial.gif). Your fingers' position will be shown with the purplish circles and the portal opens completely once it opens enough(you can see the progress in the bottom right corner). I hope you will do the right thing: support Ukraine and donate money. And if you are russian: either donate money, or fuck off.
 
-for any question write in [telegram](https://t.me/fubim)
+for any questions write in [telegram](https://t.me/fubim)
